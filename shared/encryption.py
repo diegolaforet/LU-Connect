@@ -29,6 +29,12 @@ def decrypt_message(encrypted_message):
     cipher  = Fernet(key) #Create objet to decrypt using key
     return cipher.decrypt(encrypted_message).decode() 
 
+def encrypt_file():
+    pass
+
+def decrypt_file():
+    pass
+
 encr_message = encrypt_message("Hola, I want a car food")
 message = decrypt_message(encr_message)
 print(encr_message)
