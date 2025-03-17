@@ -1,11 +1,13 @@
 import socket
 from threading import Semaphore, Thread
+from server.queue_manager import QueueManager
 
 HOST = '127.0.01'
 PORT = 65432
 
 MAX_CLIENTS = 3 #Create constant with the number of maximum connections permitted
 client_semaphore = Semaphore(MAX_CLIENTS)
+queue_manager = QueueManager()
 
 
 def start_server():
@@ -26,11 +28,9 @@ def start_server():
             # Client accepted if there is space in the semaphore and call handle_client
             Thread(target=handle_client, args=(client_socket, addr)).start()
         else:
-            '''Send client to queue manager'''
-            print(f"No space for client {addr}. Adding to queue.")
-            client_socket.close()  
+            queue_manager.add_client(client_socket, addr)
 
-def handle_client():
+def handle_client(client_socket, addr):
     print(f"Handling client {addr}")
 
     '''Call client handler in future'''
