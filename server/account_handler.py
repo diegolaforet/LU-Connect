@@ -10,10 +10,10 @@ def register_user(username, password):
 
     password_hash = hash_password(password)
 
-    #Insert new user inot database, if user with same username existed raise error
+    #Insert new user into database, if user with same username existed raise error
     try:
         cur.execute(f"INSERT INTO users(username, password_hash) VALUES ('{username}', '{password_hash}')")
-        user_id = cur.lastrowid
+        user_id = cur.lastrowid()
         con.commit()
         print("User registered successfully!")
         return user_id #Return user id 
