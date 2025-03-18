@@ -1,5 +1,5 @@
 import sqlite3 #Needed for user registration and credentials validation when log in
-from server.database.database import connect_db #Import function to create connection with the database
+from .database.database import connect_db #Import function to create connection with the database
 from shared.encryption import hash_password #Import function to hash passwords from encryption.py
 import bcrypt #Needed to validate hashed password
 
@@ -13,7 +13,7 @@ def register_user(username, password):
     #Insert new user into database, if user with same username existed raise error
     try:
         cur.execute(f"INSERT INTO users(username, password_hash) VALUES ('{username}', '{password_hash}')")
-        user_id = cur.lastrowid()
+        user_id = cur.lastrowid
         con.commit()
         print("User registered successfully!")
         return user_id #Return user id 
@@ -51,4 +51,14 @@ def get_user_id(username):
     
     con.close()
     
-    return result[0] if result else None #If the user exists return the user_id else return None      
+    return result[0] if result else None #If the user exists return the user_id else return None 
+
+def user_exists(username):     
+    con = connect_db()
+    cur = con.cursor()
+    
+    cur.execute("SELECT 1 FROM users WHERE username = ?", (username,))
+    result = cur.fetchone()  
+    
+    con.close()
+    return result is not None 

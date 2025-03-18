@@ -2,7 +2,7 @@ from cryptography.fernet import Fernet #Encrypt messages and files
 import bcrypt #Bash passwords
 import os #Needed to create file to store the key
 
-KEY_FILE = "encryption.key" #Same key for all users, one unique key saved on local file
+KEY_FILE = "shared/encryption.key" #Same key for all users, one unique key saved on local file
 
 #Funciton to generate new key and store it
 def generate_key(): 

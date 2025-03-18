@@ -1,36 +1,74 @@
 from threading import Thread
-from shared.encryption import decrypt_message
-from server.database.database import connect_db
-from server.queue_manager import QueueManager
+from shared.encryption import encrypt_message, decrypt_message
+import json #To handle messages
 
-queue_manager = QueueManager()
+#Store encryipted messages temporarly 
+encrypt_messages = {} 
 
-# Function to handle each client's connection individually
+#Dictionary to map sockets and users (only active)
+active_clients = {}
+
+#Obtain the user to send the message to
+def get_receiver_username(decrypted_message):
+    try:
+        message_data = json.loads(decrypted_message)
+        return message_data.get("to")
+    except json.JSONDecodeError:
+        return None
+    
+    
+def retransmit_message(receiver_username, encrypted_message):
+    receiver = active_clients.get(receiver_username)
+    
+    if receiver:
+        receiver_socket, _ = receiver
+        receiver_socket.send(encrypted_message)
+        print(f"[SENT] Message sent to {receiver_username}")
+    else:
+        print(f"[ERROR] {receiver_username} not connected.")
+
+# Diccionario para almacenar usuarios activos
 def client_handler(client_socket, addr, client_semaphore):
     print(f"[NEW CONNECTION] {addr} connected.")
-    
-    try:
-        while True:
-            encrypted_message = client_socket.recv(1024) #Recieve data from client
+      
+    username = None  #Initialize username 
 
-            #If connection closed 
+    try:
+        #Recieve credentials from client (username, password)
+        encrypted_credentials = client_socket.recv(1024)
+        credentials = json.loads(decrypt_message(encrypted_credentials))
+
+        username = credentials.get("username")
+
+        #Save client on active client diccionary
+        active_clients[username] = (client_socket, addr)
+        print(f"[USER CONNECTED] {username} connected successfully.")
+
+        # Comenzamos el bucle para escuchar mensajes
+        while True:
+            encrypted_message = client_socket.recv(1024)
             if not encrypted_message:
-                print(f"[DISCONNECTED] {addr} disconnected.")
+                print(f"[DISCONNECTED] {username} {addr} disconnected.")
                 break
 
-            print(f"[MESSAGE RECEIVED] Encrypted from {addr}: {encrypted_message}")
+            print(f"[MESSAGE RECEIVED] Encrypted from {username}: {encrypted_message}")
 
-            # Here you will implement:
-            # Decrypt message using decrypt_message from encryption
-            # decrypted_message = decrypt_message(encrypted_message)
+            decrypted_message = decrypt_message(encrypted_message)
+            receiver_username = get_receiver_username(decrypted_message)
 
-            # Store the encrypted message in the database
-            # Retransmit the decrypted message to the intended receiver
+            if receiver_username:
+                retransmit_message(receiver_username, encrypted_message)
+            else:
+                print("[ERROR] Receiver username not found in message.")
 
     except ConnectionResetError:
         print(f"[ERROR] Connection reset by {addr}.")
-
     finally:
+        # Remover usuario de clientes activos
+        if username in active_clients:
+            del active_clients[username]
+            print(f"[ACTIVE USERS] {username} removed from active clients.")
+
         client_socket.close()
         client_semaphore.release()
         print(f"[CONNECTION CLOSED] {addr} connection closed.")

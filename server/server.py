@@ -1,7 +1,7 @@
 import socket
 from threading import Semaphore, Thread
-from server.queue_manager import QueueManager
-from server.client_handler import client_handler
+from .queue_manager import QueueManager
+from .client_handler import client_handler
 
 HOST = '127.0.0.1'
 PORT = 65432
