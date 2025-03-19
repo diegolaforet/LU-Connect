@@ -15,8 +15,7 @@ def get_receiver_username(decrypted_message):
         return message_data.get("to")
     except json.JSONDecodeError:
         return None
-    
-    
+        
 def retransmit_message(receiver_username, encrypted_message):
     receiver = active_clients.get(receiver_username)
     
@@ -44,7 +43,7 @@ def client_handler(client_socket, addr, client_semaphore):
         active_clients[username] = (client_socket, addr)
         print(f"[USER CONNECTED] {username} connected successfully.")
 
-        # Comenzamos el bucle para escuchar mensajes
+        #Start while to always listen to upcoming messages
         while True:
             encrypted_message = client_socket.recv(1024)
             if not encrypted_message:
@@ -64,7 +63,7 @@ def client_handler(client_socket, addr, client_semaphore):
     except ConnectionResetError:
         print(f"[ERROR] Connection reset by {addr}.")
     finally:
-        # Remover usuario de clientes activos
+        #Remove user from active clients when connection is closed
         if username in active_clients:
             del active_clients[username]
             print(f"[ACTIVE USERS] {username} removed from active clients.")

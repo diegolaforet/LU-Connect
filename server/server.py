@@ -1,7 +1,9 @@
 import socket
+import json
 from threading import Semaphore, Thread
 from .queue_manager import QueueManager
 from .client_handler import client_handler
+from shared.encryption import encrypt_message
 
 HOST = '127.0.0.1'
 PORT = 65432
@@ -35,12 +37,20 @@ def start_server():
 def handle_client(client_socket, addr):
     print(f"Handling client {addr}")
 
+    accepted_message = encrypt_message(json.dumps({"status": "accepted"}))
+    client_socket.send(accepted_message)
+
     client_handler(client_socket, addr, client_semaphore)
 
     next_client_socket, next_addr = queue_manager.remove_client() #Remove client from queue
 
     if next_client_socket:
         print(f"[QUEUE] Accepting next client: {next_addr}")
+
+        client_semaphore.acquire()
+
+        accepted_message = encrypt_message(json.dumps({"status": "accepted"}))
+        next_client_socket.send(accepted_message)        
 
         #If there is a client waiting create a new thread and all again handle_client
         Thread(target=handle_client, args=(next_client_socket, next_addr)).start()

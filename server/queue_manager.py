@@ -1,5 +1,7 @@
 from queue import Queue 
 import time #Needed to calculate waiting times
+import json
+from shared.encryption import encrypt_message
 
 #Class to manage the client queue
 class QueueManager:
@@ -10,13 +12,24 @@ class QueueManager:
 
     # Add a new client to the queue
     def add_client(self, client_socket, addr):
+        position = self.queue.qsize() + 1
         entry_time = time.time() 
 
         self.queue.put((client_socket, addr, entry_time)) #Save on queue the client socket, the IP address and entry time 
-        position = self.queue.qsize() #Take position on queue
+
         estimated_wait = self.estimate_wait_time(position - 1) #Save waiting time
 
-        print(f"Client {addr} added to queue. Position: {position}. Estimated wait time: {estimated_wait:.2f} seconds.") 
+        message = {
+            "status": "queue",
+            "position": position,
+            "estimated_wait": estimated_wait
+        }
+
+        encrypted_msg = encrypt_message(json.dumps(message))
+        client_socket.send(encrypted_msg)  #Send client that he is in the queue and estimated waiting time
+
+        print(f"Client {addr} added to queue. Position: {position}. Estimated wait time: {estimated_wait:.2f} seconds.")       
+
 
     # Remove client from queue 
     def remove_client(self):
