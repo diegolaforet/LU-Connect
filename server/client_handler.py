@@ -1,5 +1,5 @@
 from threading import Thread
-from shared.encryption import encrypt_message, decrypt_message
+from shared.encryption import decrypt_message
 import json #To handle messages
 
 #Store encryipted messages temporarly 
@@ -23,6 +23,16 @@ def retransmit_message(receiver_username, encrypted_message):
         receiver_socket, _ = receiver
         receiver_socket.send(encrypted_message)
         print(f"[SENT] Message sent to {receiver_username}")
+    else:
+        print(f"[ERROR] {receiver_username} not connected.")
+
+def retransmit_file(receiver_username, encrypted_message):
+    receiver = active_clients.get(receiver_username)
+    
+    if receiver:
+        receiver_socket, _ = receiver
+        receiver_socket.send(encrypted_message)
+        print(f"[SENT] File sent to {receiver_username}")
     else:
         print(f"[ERROR] {receiver_username} not connected.")
 
@@ -53,10 +63,16 @@ def client_handler(client_socket, addr, client_semaphore):
             print(f"[MESSAGE RECEIVED] Encrypted from {username}: {encrypted_message}")
 
             decrypted_message = decrypt_message(encrypted_message)
-            receiver_username = get_receiver_username(decrypted_message)
+            message_data = json.loads(decrypted_message)
+            
+            receiver_username = message_data.get("to")
+            message_type = message_data.get("type", "message")
 
             if receiver_username:
-                retransmit_message(receiver_username, encrypted_message)
+                if message_type == "file":
+                    retransmit_file(receiver_username, encrypted_message)
+                else:
+                    retransmit_message(receiver_username, encrypted_message)
             else:
                 print("[ERROR] Receiver username not found in message.")
 

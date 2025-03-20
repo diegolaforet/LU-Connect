@@ -1,6 +1,7 @@
 from cryptography.fernet import Fernet #Encrypt messages and files 
 import bcrypt #Bash passwords
 import os #Needed to create file to store the key
+import base64 #Needed to encrypt files
 
 KEY_FILE = "shared/encryption.key" #Same key for all users, one unique key saved on local file
 
@@ -29,12 +30,29 @@ def decrypt_message(encrypted_message):
     cipher  = Fernet(key) #Create objet to decrypt using key
     return cipher.decrypt(encrypted_message).decode() 
 
-'''Leave until conexion with database is worked'''
-def encrypt_file():
-    pass
+def encrypt_file(file_path):
+    
+    key = load_key()
+    cipher = Fernet(key)
 
-def decrypt_file():
-    pass
+    with open(file_path, 'rb') as file:
+        file_data = file.read()
+        encrypted_data = cipher.encrypt(file_data)
+    
+    return base64.b64encode(encrypted_data).decode()
+
+def decrypt_file(encrypted_data_b64, output_path):
+    
+    key = load_key()
+    cipher = Fernet(key)
+
+    encrypted_data = base64.b64decode(encrypted_data_b64)
+    decrypted_data = cipher.decrypt(encrypted_data)
+    
+    with open(output_path, "wb") as file:
+        file.write(decrypted_data)
+    
+    print(f"File saved on {output_path}")    
 
 def hash_password(password):
     salt = bcrypt.gensalt()
