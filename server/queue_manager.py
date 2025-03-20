@@ -51,11 +51,20 @@ class QueueManager:
 
     # Calculate estimated wait time based on queue position
     def estimate_wait_time(self, client_position):
+        if self.queue.empty():
+            return 0  #If queue empty no calculation
 
-        if self.total_clients_served == 0:
-            average_waiting_time = 60  #Start average waiting time with 1 min
-        else:
+        current_time = time.time()
 
-            #Calculate waiting time (average waiting time * position in queue)
-            average_waiting_time = self.total_waiting_time / self.total_clients_served
-        return average_waiting_time * client_position
+        #Take entry time of client
+        first_entry_time = self.queue.queue[0][2]
+
+        #Put first client base waiting time 60 sec
+        estimated_base_time = (self.total_waiting_time / self.total_clients_served) if self.total_clients_served > 0 else 60
+
+        estimated_wait = estimated_base_time * client_position
+
+        #Calculate waiting time 
+        real_wait_time = max(estimated_wait - (current_time - first_entry_time), 0)
+
+        return round(real_wait_time, 2)
