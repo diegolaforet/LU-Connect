@@ -17,7 +17,15 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True) #Create folder if it doesnt exist
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
 
-# Function to create and send messages
+#Function to check if a user exists 
+def check_user_exists(username):
+    return user_exists(username)
+
+#Register user using credentials from window
+def register_new_user(username, password):
+    return register_user(username, password)
+
+#Function to create and send messages
 def send_message(sender, receiver, message_text):
     # Create message structure
     message = {
@@ -104,6 +112,8 @@ def listen_for_messages(client_socket):
             print(f"[ERROR] Error al recibir mensaje: {e}")
             break               
 
+#Main flow of client before implementing gui
+'''
 # Main authentication flow
 while True:
     username = input("Write your username: ").strip()
@@ -179,3 +189,4 @@ while True:
         break
     else:
         print("Not valid option")
+'''
