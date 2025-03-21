@@ -54,12 +54,12 @@ def send_credentials(username, password, client_socket):
 
 def send_file(sender, receiver, file_path):
     if not os.path.exists(file_path):
-        print("[ERROR] Archivo no encontrado.")
+        print("[ERROR] File not found.")
         return
     
     file_extension = file_path.split(".")[-1].lower()
     if file_extension not in ALLOWED_FILE_TYPES:
-        print(f"[ERROR] Tipo de archivo {file_extension} no permitido.")
+        print(f"[ERROR] File type {file_extension} not allowed.")
         return
     
     encrypted_file_data = encrypt_file(file_path)
@@ -75,7 +75,7 @@ def send_file(sender, receiver, file_path):
     
     encrypted_msg = encrypt_message(json.dumps(file_message))
     client_socket.send(encrypted_msg)
-    print(f"[INFO] Archivo {filename} enviado a {receiver}.")
+    print(f"[INFO] File {filename} sent to {receiver}.")
 
 def listen_for_messages(client_socket):
 
@@ -91,29 +91,33 @@ def listen_for_messages(client_socket):
             try:
                 message_data = json.loads(decrypted_message)
 
+                #If user not connected print 
+                if message_data.get("type") == "system" and "error" in message_data:
+                    print(f"\n[SYSTEM] {message_data['error']}")
+                    print("\nSelect an action to do (message/file/exit): ", end="", flush=True)
+                    continue
+
                 if "type" in message_data and message_data["type"] == "file":
                     filename = message_data['filename']
                     filedata = message_data['filedata']
                     output_path = os.path.join(OUTPUT_FOLDER, filename)
                     decrypt_file(filedata, output_path)
-                    print(f"\n[INFO] Archivo recibido de {message_data['from']}: {filename}, guardado en {output_path}")
+                    print(f"\n[INFO] File recevied from {message_data['from']}: {filename}, saved on {output_path}")
                 else:
                     sender = message_data.get("from")
                     message_text = message_data.get("message")
                     timestamp = message_data.get("timestamp")
                     if sender and message_text:
-                        print(f"\n[{timestamp}] Nuevo mensaje de {sender}: {message_text}")
+                        print(f"\n[{timestamp}] New message from {sender}: {message_text}")
 
             #Ignore not JSON messages
             except json.SDONDecodeError:
                 pass
 
         except Exception as e:
-            print(f"[ERROR] Error al recibir mensaje: {e}")
+            print(f"[ERROR] Error receving the message: {e}")
             break               
 
-#Main flow of client before implementing gui
-'''
 # Main authentication flow
 while True:
     username = input("Write your username: ").strip()
@@ -131,7 +135,7 @@ if user_exists(username):
             continue  #Only break loop if password not empty
         
         if user_authentification(username, password):
-            print("Inicio de sesión exitoso, conectando al servidor...")
+            print("Log in succesfull")
             break  #Break loop if authentification is succesfull
         else:
             print("Incorrect passwords")
@@ -160,21 +164,24 @@ send_credentials(username, password, client_socket)
 response_encrypted = client_socket.recv(1024)
 response = json.loads(decrypt_message(response_encrypted))
 
-if response["status"] == "queue":
-    print(f"You are in the queue. Your position: {response['position']}, estimated waiting time: {response['estimated_wait']} seconds.")
+while True: 
+    if response["status"] == "queue":
+        print(f"You are in the queue. Your position: {response['position']}, estimated waiting time: {response['estimated_wait']} seconds.")
 
-    #Wait for server confirmation of free semaphore
-    response = json.loads(decrypt_message(client_socket.recv(1024)))
+        #Wait for server confirmation of free semaphore
+        response = json.loads(decrypt_message(client_socket.recv(1024)))
+        continue
 
-if response.get("status") == "accepted":
-    print("¡Ahora puede comenzar a enviar mensajes!")
+    if response.get("status") == "accepted":
+        print("You can send messages now")
+        break
 
 #Thread to listen to upcoming messages
 listen_thread = Thread(target=listen_for_messages, args=(client_socket,))
 listen_thread.start()
 
 while True:
-    action = input("\nSelecta action to do (message/file/exit): ").strip().lower()
+    action = input("\nSelect an action to do (message/file/exit): ").strip().lower()
     if action == "message":
         receiver = input("Send message to (username): ")
         message_text = input("Message: ")
@@ -189,4 +196,3 @@ while True:
         break
     else:
         print("Not valid option")
-'''

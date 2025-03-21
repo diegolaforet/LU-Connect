@@ -1,5 +1,5 @@
 from threading import Thread
-from shared.encryption import decrypt_message
+from shared.encryption import decrypt_message, encrypt_message
 import json #To handle messages
 
 #Store encryipted messages temporarly 
@@ -26,6 +26,23 @@ def retransmit_message(receiver_username, encrypted_message):
     else:
         print(f"[ERROR] {receiver_username} not connected.")
 
+        #If user not conected
+        try:
+            # Find who sent the message
+            decrypted_message = decrypt_message(encrypted_message)
+            message_data = json.loads(decrypted_message)
+            sender_username = message_data.get("from")
+
+            if sender_username in active_clients:
+                sender_socket, _ = active_clients[sender_username]
+                error_notice = {
+                    "type": "system",
+                    "error": f"User '{receiver_username}' is not connected."
+                }
+                sender_socket.send(encrypt_message(json.dumps(error_notice)))
+        except Exception as e:
+            print(f"[ERROR] Could not notify sender: {e}")
+
 def retransmit_file(receiver_username, encrypted_message):
     receiver = active_clients.get(receiver_username)
     
@@ -35,6 +52,23 @@ def retransmit_file(receiver_username, encrypted_message):
         print(f"[SENT] File sent to {receiver_username}")
     else:
         print(f"[ERROR] {receiver_username} not connected.")
+
+        #If user not conected
+        try:
+            # Find who sent the message
+            decrypted_message = decrypt_message(encrypted_message)
+            message_data = json.loads(decrypted_message)
+            sender_username = message_data.get("from")
+
+            if sender_username in active_clients:
+                sender_socket, _ = active_clients[sender_username]
+                error_notice = {
+                    "type": "system",
+                    "error": f"User '{receiver_username}' is not connected."
+                }
+                sender_socket.send(encrypt_message(json.dumps(error_notice)))
+        except Exception as e:
+            print(f"[ERROR] Could not notify sender: {e}")
 
 # Diccionario para almacenar usuarios activos
 def client_handler(client_socket, addr, client_semaphore):
@@ -60,7 +94,7 @@ def client_handler(client_socket, addr, client_semaphore):
                 print(f"[DISCONNECTED] {username} {addr} disconnected.")
                 break
 
-            print(f"[MESSAGE RECEIVED] Encrypted from {username}: {encrypted_message}")
+            print(f"[MESSAGE] Encrypted from {username}: {encrypted_message}")
 
             decrypted_message = decrypt_message(encrypted_message)
             message_data = json.loads(decrypted_message)

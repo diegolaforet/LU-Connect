@@ -42,6 +42,9 @@ class QueueManager:
             self.total_waiting_time += wait_time
 
             print(f"Client {addr} removed from queue after waiting {wait_time:.2f} seconds.")
+
+            self.update_queue_status()  # Update queue for remaining clients
+
             return client_socket, addr
         
         #No clients waiting in queue
@@ -68,3 +71,19 @@ class QueueManager:
         real_wait_time = max(estimated_wait - (current_time - first_entry_time), 0)
 
         return round(real_wait_time, 2)
+
+    # Update queue status and send updates to all waiting clients
+    def update_queue_status(self):
+        updated_clients = list(self.queue.queue)
+        for position, (client_socket, addr, entry_time) in enumerate(updated_clients):
+            estimated_wait = self.estimate_wait_time(position)
+            message = {
+                "status": "queue",
+                "position": position + 1,
+                "estimated_wait": estimated_wait
+            }
+            encrypted_msg = encrypt_message(json.dumps(message))
+            try:
+                client_socket.send(encrypted_msg)
+            except Exception as e:
+                print(f"Error sending queue update to {addr}: {e}")
